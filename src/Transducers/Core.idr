@@ -38,7 +38,8 @@ record Reducer st acc x where
 export
 terminal : StatelessStep acc x -> Reducer () acc x
 terminal fn = MkReducer () step (const id)
-  where step acc x = pure $ Continue (fn acc x)
+  where step : acc -> x -> State () (Status acc)
+      step acc x = pure $ Continue (fn acc x)
 
 public export
 Transducer : (acc, s1, s2, outer, inner: Type) -> Type
@@ -63,8 +64,9 @@ makeTransducer :
 makeTransducer initialState stepTf onComplete next =
   MkReducer (initialState, state next) stepImpl completeImpl
   where
+    completeImpl : (s', s) -> acc -> State s (Status acc)
     completeImpl (s', s) acc =
-      let acc = evalState (onComplete (runStep next) s' acc) s
+      let acc = evalState s (onComplete (runStep next) s' acc)
       in complete next s acc
     stepImpl acc x = do
       (s1', s1) <- get
@@ -81,6 +83,7 @@ export
 statefulTransducer : s' -> (Step s acc b -> Step s (s', acc) a) -> Transducer acc s (s', s) a b
 statefulTransducer initState stepTf = makeTransducer initState stepTf onComplete
   where
+    onComplete : Step s (s', acc) a -> s -> acc -> State s (Status acc)
     onComplete next _ acc = pure acc
 
 export
@@ -96,6 +99,7 @@ export
 runSteps : (Foldable t) => Step st acc x -> acc -> t x -> State st (Status acc)
 runSteps step acc xs = foldr stepImpl (pure . id) xs (Continue acc)
   where
+    stepImpl : x -> (Status acc -> State st (Status acc)) -> Status acc -> State st (Status acc)
     stepImpl _ nextIteration (Done acc) = pure (Done acc)
     stepImpl x nextIteration (Continue acc) = step acc x >>= nextIteration
 
@@ -104,7 +108,7 @@ reduce : (Foldable t) => Reducer st acc x -> acc -> t x -> acc
 reduce step acc =
   uncurry (complete step)
     . (\(acc, s) => (s, unStatus acc))
-    . (flip runState (state step))
+    . (runState (state step))
     . runSteps (runStep step) acc
 
 export
