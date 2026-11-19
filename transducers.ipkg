@@ -1,4 +1,6 @@
 package transducers
+version = 0.1.0
+authors = "Quentin Duval"
 
 sourcedir = "src"
 
@@ -9,6 +11,3 @@ modules = Transducers
         , Test.Transducers.Core
         , Test.Transducers.Examples
         , Test.Transducers.Utils
-
-tests = Test.Transducers.Core.run_tests
-      , Test.Transducers.Examples.run_tests
