@@ -38,8 +38,9 @@ record Reducer st acc x where
 export
 terminal : StatelessStep acc x -> Reducer () acc x
 terminal fn = MkReducer () step (const id)
-  where step : acc -> x -> State () (Status acc)
-      step acc x = pure $ Continue (fn acc x)
+  where
+    step : acc -> x -> State () (Status acc)
+    step acc x = pure $ Continue (fn acc x)
 
 public export
 Transducer : (acc, s1, s2, outer, inner: Type) -> Type
