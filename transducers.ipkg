@@ -1,6 +1,6 @@
 package transducers
 
-sourcedir = src
+sourcedir = "src"
 
 modules = Transducers
         , Transducers.Algorithms
