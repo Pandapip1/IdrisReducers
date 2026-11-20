@@ -68,7 +68,7 @@ should_allow_pure_xf_composition =
   in do
     assertEq 50 (transduce xf (+) 0 [1..100])
     assertEq 30240 (transduce xf (*) 1 [1..100])
-    assertEq 0 (transduce (mapping length . mapping cast . xf) (+) 0 (replicate 100 "ab"))
+    assertEq 0 (transduce (mapping String.length . mapping cast . xf) (+) 0 (replicate 100 "ab"))
 
 should_index : Test
 should_index = do
@@ -76,11 +76,9 @@ should_index = do
   assertEq "0: Zero, 1: One, 2: Two" (transduce xf (++) "" ["Zero", "One", "Two"])
 
 should_chunk_of : Test
-should_chunk_of =
-  let xf = chunksOf 4 . mapping pack . mapping (++ " ")
-  in do
-    assertEq "abcd efgh ijkl " (transduce xf (++) "" ['a'..'l'])
-    assertEq "abcd efgh ij " (transduce xf (++) "" ['a'..'j'])
+should_chunk_of = do
+  assertEq "abcd efgh ijkl " (the String (transduce (chunksOf 4 . mapping pack . mapping (++ " ")) String.(++) "" ['a'..'l']))
+  assertEq "abcd efgh ij "   (the String (transduce (chunksOf 4 . mapping pack . mapping (++ " ")) String.(++) "" ['a'..'j']))
 
 should_intersperse : Test
 should_intersperse = do
@@ -89,18 +87,19 @@ should_intersperse = do
 
 should_deduplicate : Test
 should_deduplicate = do
-  assertEq "abcdcbad" $ transduce (mapping singleton . deduplicate) (++) "" (unpack "abbcddccbaad")
+  assertEq "abcdcbad" $ transduce (mapping Data.String.singleton . deduplicate) String.(++) "" (unpack "abbcddccbaad")
 
 should_group_by : Test
 should_group_by =
   assertEq ["aa", "b", "ccc", "b"] $
-    reverse $ into [] (groupingBy (==) . mapping pack) (unpack "aabcccb")
+    reverse $ into (the (List String) []) (groupingBy (==) . mapping pack) (unpack "aabcccb")
 
 should_group_by_with_custom_predicate : Test
 should_group_by_with_custom_predicate =
   assertEq 3 $ longestIncreasingSeq [1, 2, 1, 3, 4, 1, 5, 3, 4]
   where
-    longestIncreasingSeq = transduce (groupingBy (<) . mapping length . mapping cast) max 0
+    longestIncreasingSeq : List Int -> Int
+    longestIncreasingSeq = transduce (groupingBy (<) . mapping List.length . mapping cast) max 0
 
 should_support_isomorphisms : Test
 should_support_isomorphisms =
