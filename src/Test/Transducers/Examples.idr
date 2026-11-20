@@ -67,8 +67,9 @@ test_unwordSmallNames =
 --------------------------------------------------------------------------------
 
 startsWith : Char -> String -> Bool
-startsWith c str =
-  if length str == 0 then False else strHead str == c
+startsWith c str = case strM str of
+  StrCons x _ => x == c
+  StrNil      => False
 
 --------------------------------------------------------------------------------
 
