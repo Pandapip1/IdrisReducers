@@ -52,7 +52,7 @@ taking n = statefulTransducer n takeImpl
   where
     takeImpl : Step s acc a -> Step s (Nat, acc) a
     takeImpl next (Z, acc) a = pure (Done (Z, acc))
-    takeImpl next (n, acc) a = withState (pred n) <$> next acc a
+    takeImpl next (S k, acc) a = withState k <$> next acc a
 
 export
 interspersing : a -> Transducer acc s (Bool, s) a a
@@ -68,7 +68,7 @@ indexingFrom : Int -> Transducer acc s (Int, s) a (Int, a)
 indexingFrom startIndex = statefulTransducer startIndex stepImpl
   where
     stepImpl : Step s acc (Int, a) -> Step s (Int, acc) a
-    stepImpl next (n, acc) a = withState (succ n) <$> next acc (n, a)
+    stepImpl next (n, acc) x = withState (S n) <$> next acc (n, x)
 
 export
 indexing : Transducer acc s (Int, s) a (Int, a)
@@ -85,10 +85,8 @@ chunksOf chunkSize = makeTransducer [] nextChunk dumpRemaining
         then withState [] <$> next acc (reverse remaining')
         else pure $ Continue (remaining', acc)
     dumpRemaining : Step s acc (List a) -> List a -> acc -> State s acc
-    dumpRemaining next remaining acc =
-      if isNil remaining
-        then pure acc
-        else unStatus <$> next acc (reverse remaining)
+    dumpRemaining next [] acc = pure acc
+    dumpRemaining next remaining acc = unStatus <$> next acc (reverse remaining)
 
 export
 deduplicate : (Eq a) => Transducer acc s (Maybe a, s) a a
@@ -106,9 +104,9 @@ groupingBy sameGroup = makeTransducer [] stepImpl dumpRemaining
   where
     stepImpl : Step s acc (List a) -> Step s (List a, acc) a
     stepImpl next (previousVals, acc) x =
-      case nonEmpty previousVals of
-        No _ => pure $ Continue ([x], acc)
-        Yes _ => if sameGroup (head previousVals) x
+      case previousVals of
+        [] => pure $ Continue ([x], acc)
+        (h :: _) => if sameGroup h x
           then pure $ Continue (x :: previousVals, acc)
           else withState [x] <$> next acc (reverse previousVals)
     dumpRemaining : Step s acc (List a) -> List a -> acc -> State s acc
