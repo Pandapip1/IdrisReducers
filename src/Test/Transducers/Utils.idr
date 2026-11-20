@@ -2,6 +2,8 @@ module Test.Transducers.Utils
 
 import System
 
+import Data.List
+
 export
 Test : Type
 Test = IO Int
