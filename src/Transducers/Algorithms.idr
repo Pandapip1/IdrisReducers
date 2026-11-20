@@ -42,6 +42,7 @@ export
 dropping : Nat -> Transducer acc s (Nat, s) a a
 dropping n = statefulTransducer n dropImpl
   where
+    dropImpl : Step s acc a -> Step s (Nat, acc) a
     dropImpl next (S n, acc) _ = pure $ Continue (n, acc)
     dropImpl next (Z, acc) a = withState Z <$> next acc a
 
@@ -49,6 +50,7 @@ export
 taking : Nat -> Transducer acc s (Nat, s) a a
 taking n = statefulTransducer n takeImpl
   where
+    takeImpl : Step s acc a -> Step s (Nat, acc) a
     takeImpl next (Z, acc) a = pure (Done (Z, acc))
     takeImpl next (n, acc) a = withState (pred n) <$> next acc a
 
@@ -56,6 +58,7 @@ export
 interspersing : a -> Transducer acc s (Bool, s) a a
 interspersing separator = statefulTransducer False stepImpl
   where
+    stepImpl : Step s acc a -> Step s (Bool, acc) a
     stepImpl next (False, acc) a = withState True <$> next acc a
     stepImpl next (True, acc) a =
       withState True <$> runSteps next acc [separator, a]
@@ -64,6 +67,7 @@ export
 indexingFrom : Int -> Transducer acc s (Int, s) a (Int, a)
 indexingFrom startIndex = statefulTransducer startIndex stepImpl
   where
+    stepImpl : Step s acc (Int, a) -> Step s (Int, acc) a
     stepImpl next (n, acc) a = withState (succ n) <$> next acc (n, a)
 
 export
@@ -74,11 +78,13 @@ export
 chunksOf : Nat -> Transducer acc s (List a, s) a (List a)
 chunksOf chunkSize = makeTransducer [] nextChunk dumpRemaining
   where
-    nextChunk next (remaining, acc) a =
-      let remaining' = a :: remaining in
+    nextChunk : Step s acc (List a) -> Step s (List a, acc) a
+    nextChunk next (remaining, acc) x =
+      let remaining' = x :: remaining in
       if length remaining' == chunkSize
         then withState [] <$> next acc (reverse remaining')
         else pure $ Continue (remaining', acc)
+    dumpRemaining : Step s acc (List a) -> List a -> acc -> State s acc
     dumpRemaining next remaining acc =
       if isNil remaining
         then pure acc
@@ -88,21 +94,24 @@ export
 deduplicate : (Eq a) => Transducer acc s (Maybe a, s) a a
 deduplicate = statefulTransducer Nothing stepImpl
   where
-    stepImpl next (oldVal, acc) a =
-      if oldVal == Just a
+    stepImpl : Step s acc a -> Step s (Maybe a, acc) a
+    stepImpl next (oldVal, acc) x =
+      if oldVal == Just x
         then pure $ Continue (oldVal, acc)
-        else withState (Just a) <$> next acc a
+        else withState (Just x) <$> next acc x
 
 export
 groupingBy : (a -> a -> Bool) -> Transducer acc s (List a, s) a (List a)
 groupingBy sameGroup = makeTransducer [] stepImpl dumpRemaining
   where
-    stepImpl next (previousVals, acc) a =
+    stepImpl : Step s acc (List a) -> Step s (List a, acc) a
+    stepImpl next (previousVals, acc) x =
       case nonEmpty previousVals of
-        No _ => pure $ Continue ([a], acc)
-        Yes _ => if sameGroup (head previousVals) a -- Maintain stable order
-          then pure $ Continue (a :: previousVals, acc)
-          else withState [a] <$> next acc (reverse previousVals)
+        No _ => pure $ Continue ([x], acc)
+        Yes _ => if sameGroup (head previousVals) x
+          then pure $ Continue (x :: previousVals, acc)
+          else withState [x] <$> next acc (reverse previousVals)
+    dumpRemaining : Step s acc (List a) -> List a -> acc -> State s acc
     dumpRemaining next remaining acc =
       if isNil remaining
         then pure acc
