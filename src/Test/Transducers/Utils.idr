@@ -4,7 +4,7 @@ import System
 
 import Data.List
 
-export
+public export
 Test : Type
 Test = IO Int
 
