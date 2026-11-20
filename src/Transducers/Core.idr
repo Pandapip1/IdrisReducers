@@ -99,11 +99,11 @@ withState s = map (\acc => (s, acc))
 
 export
 runSteps : (Foldable t) => Step st acc x -> acc -> t x -> State st (Status acc)
-runSteps step acc xs = foldr stepImpl (pure . id) xs (Continue acc)
+runSteps step acc0 xs = foldr stepImpl (pure . id) xs (Continue acc0)
   where
     stepImpl : x -> (Status acc -> State st (Status acc)) -> Status acc -> State st (Status acc)
-    stepImpl _ nextIteration (Done acc') = pure (Done acc')
-    stepImpl x nextIteration (Continue acc') = step acc' x >>= nextIteration
+    stepImpl _ nextIteration (Done acc) = pure (Done acc)
+    stepImpl x nextIteration (Continue acc) = step acc x >>= nextIteration
 
 export
 reduce : (Foldable t) => Reducer st acc x -> acc -> t x -> acc
