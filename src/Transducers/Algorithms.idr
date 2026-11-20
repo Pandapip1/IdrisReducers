@@ -68,7 +68,7 @@ indexingFrom : Int -> Transducer acc s (Int, s) a (Int, a)
 indexingFrom startIndex = statefulTransducer startIndex stepImpl
   where
     stepImpl : Step s acc (Int, a) -> Step s (Int, acc) a
-    stepImpl next (n, acc) x = withState (S n) <$> next acc (n, x)
+    stepImpl next (n, acc) x = withState (n + 1) <$> next acc (n, x)
 
 export
 indexing : Transducer acc s (Int, s) a (Int, a)
@@ -110,10 +110,8 @@ groupingBy sameGroup = makeTransducer [] stepImpl dumpRemaining
           then pure $ Continue (x :: previousVals, acc)
           else withState [x] <$> next acc (reverse previousVals)
     dumpRemaining : Step s acc (List a) -> List a -> acc -> State s acc
-    dumpRemaining next remaining acc =
-      if isNil remaining
-        then pure acc
-        else unStatus <$> next acc (reverse remaining)
+    dumpRemaining next [] acc = pure acc
+    dumpRemaining next remaining acc = unStatus <$> next acc (reverse remaining)
 
 
 --------------------------------------------------------------------------------
