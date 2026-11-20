@@ -2,25 +2,28 @@ module Test.Transducers.Utils
 
 import System
 
-%access public export
-
+export
 Test : Type
 Test = IO Int
 
+export
 assertThat : Bool -> String -> Test
 assertThat test errorMsg =
   if test
     then do putStrLn "Test Passed"; pure 0
     else do putStrLn ("Test Failed: " ++ errorMsg); pure 1
 
+export
 assertEq : (Eq a, Show a) => (expected : a) -> (given : a) -> Test
 assertEq e g =
   assertThat (g == e) $
     "Expected == " ++ show e ++ ", Got: " ++ show g
 
+export
 runTests : List Test -> Test
 runTests = foldl (\res, t => (+) <$> res <*> t) (pure 0)
 
+export
 runTestSuite : List Test -> IO ()
 runTestSuite tests = do
   failedCount <- runTests tests
@@ -28,11 +31,14 @@ runTestSuite tests = do
     then exitFailure
     else pure ()
 
+export
 odd : Int -> Bool
 odd n = mod n 2 == 1
 
+export
 twice : Int -> List Int
 twice = replicate 2
 
+export
 vowel : Char -> Bool
 vowel c = c `elem` (unpack "aeiou")
