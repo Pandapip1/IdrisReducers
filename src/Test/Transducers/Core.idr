@@ -65,10 +65,10 @@ should_pipe_from_left_to_right input =
 should_allow_pure_xf_composition : Test
 should_allow_pure_xf_composition =
   let xf = taking 10 . filtering odd . mapping (*2)
-  in do
-    assertEq 50 (transduce xf (+) 0 [1..100])
-    assertEq 30240 (transduce xf (*) 1 [1..100])
-    assertEq 0 (transduce (mapping String.length . mapping cast . xf) (+) 0 (replicate 100 "ab"))
+  in runTests [
+       assertEq 50 (transduce xf (+) 0 [1..100]),
+       assertEq 30240 (transduce xf (*) 1 [1..100]),
+       assertEq 0 (transduce (mapping String.length . mapping cast . xf) (+) 0 (replicate 100 "ab"))]
 
 should_index : Test
 should_index = do
@@ -76,9 +76,9 @@ should_index = do
   assertEq "0: Zero, 1: One, 2: Two" (transduce xf (++) "" ["Zero", "One", "Two"])
 
 should_chunk_of : Test
-should_chunk_of = do
-  assertEq "abcd efgh ijkl " (the String (transduce (chunksOf 4 . mapping pack . mapping (++ " ")) String.(++) "" ['a'..'l']))
-  assertEq "abcd efgh ij "   (the String (transduce (chunksOf 4 . mapping pack . mapping (++ " ")) String.(++) "" ['a'..'j']))
+should_chunk_of = runTests [
+     assertEq "abcd efgh ijkl " (the String (transduce (chunksOf 4 . mapping pack . mapping (++ " ")) String.(++) "" ['a'..'l'])),
+     assertEq "abcd efgh ij " (the String (transduce (chunksOf 4 . mapping pack . mapping (++ " ")) String.(++) "" ['a'..'j']))]
 
 should_intersperse : Test
 should_intersperse = do
