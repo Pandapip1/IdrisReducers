@@ -3,6 +3,8 @@ module Test.Transducers.Core
 import Transducers
 import Test.Transducers.Utils
 
+import Data.String
+import Data.List
 
 --------------------------------------------------------------------------------
 -- Unit tests
@@ -17,8 +19,8 @@ should_map input =
 should_follow_map_law : Test
 should_follow_map_law =
   assertEq
-    (transduce (mapping length . mapping (*2)) (+) 0 ["abc", "", "cdef", "g"])
-    (transduce (mapping ((*2) . length)) (+) 0 ["abc", "", "cdef", "g"])
+    (transduce (mapping String.length . mapping (*2)) (+) 0 ["abc", "", "cdef", "g"])
+    (transduce (mapping ((*2) . String.length)) (+) 0 ["abc", "", "cdef", "g"])
 
 should_filter : List Int -> Test
 should_filter input =
@@ -41,7 +43,7 @@ should_reduce_terminal input =
 should_take : List Int -> Test
 should_take input =
   assertEq
-    (foldl (+) 0 (take 10 input))
+    (foldl (+) 0 (Data.List.take 10 input))
     (transduce (taking 10) (+) 0 input)
 
 should_take_while : Test
@@ -51,7 +53,7 @@ should_take_while =
 should_drop : List Int -> Test
 should_drop input =
   assertEq
-    (foldl (+) 0 (drop 10 input))
+    (foldl (+) 0 (Data.List.drop 10 input))
     (transduce (dropping 10) (+) 0 input)
 
 should_pipe_from_left_to_right : List Int -> Test
@@ -66,7 +68,7 @@ should_allow_pure_xf_composition =
   in do
     assertEq 50 (transduce xf (+) 0 [1..100])
     assertEq 30240 (transduce xf (*) 1 [1..100])
-    assertEq 0 (transduce (mapping length . mapping fromNat . xf) (+) 0 (replicate 100 "ab"))
+    assertEq 0 (transduce (mapping length . mapping cast . xf) (+) 0 (replicate 100 "ab"))
 
 should_index : Test
 should_index = do
@@ -74,10 +76,11 @@ should_index = do
   assertEq "0: Zero, 1: One, 2: Two" (transduce xf (++) "" ["Zero", "One", "Two"])
 
 should_chunk_of : Test
-should_chunk_of = do
+should_chunk_of =
   let xf = chunksOf 4 . mapping pack . mapping (++ " ")
-  assertEq "abcd efgh ijkl " (transduce xf (++) "" ['a'..'l'])
-  assertEq "abcd efgh ij " (transduce xf (++) "" ['a'..'j'])
+  in do
+    assertEq "abcd efgh ijkl " (transduce xf (++) "" ['a'..'l'])
+    assertEq "abcd efgh ij " (transduce xf (++) "" ['a'..'j'])
 
 should_intersperse : Test
 should_intersperse = do
@@ -97,7 +100,7 @@ should_group_by_with_custom_predicate : Test
 should_group_by_with_custom_predicate =
   assertEq 3 $ longestIncreasingSeq [1, 2, 1, 3, 4, 1, 5, 3, 4]
   where
-    longestIncreasingSeq = transduce (groupingBy (<) . mapping length . mapping fromNat) max 0
+    longestIncreasingSeq = transduce (groupingBy (<) . mapping length . mapping cast) max 0
 
 should_support_isomorphisms : Test
 should_support_isomorphisms =
