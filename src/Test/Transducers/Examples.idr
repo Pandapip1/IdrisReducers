@@ -4,11 +4,13 @@ import Control.Monad.State
 import Transducers
 import Test.Transducers.Utils
 
+import Data.String
+
 
 --------------------------------------------------------------------------------
 
 sumLength : StatelessStep Int String
-sumLength totalLength str = totalLength + fromNat (length str)
+sumLength totalLength str = totalLength + cast (length str)
 
 test_sumLength : Test
 test_sumLength =
