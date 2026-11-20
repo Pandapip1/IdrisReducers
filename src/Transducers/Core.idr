@@ -72,7 +72,7 @@ makeTransducer initialState stepTf onComplete next =
     stepImpl : acc -> a -> State (s', s) (Status acc)
     stepImpl acc x = do
       (s1', s1) <- get
-      let (s1New, result) = runState (stepTf (runStep next) (s1', acc) x) s1
+      let (s1New, result) = runState s1 (stepTf (runStep next) (s1', acc) x)
       case result of
         Done (s2', acc') => do
           put (s2', s1New)
@@ -98,7 +98,7 @@ withState s = map (\acc => (s, acc))
 --------------------------------------------------------------------------------
 
 export
-runSteps : (Foldable t) => {acc, st, x : Type} -> Step st acc x -> acc -> t x -> State st (Status acc)
+runSteps : (Foldable t) => Step st acc x -> acc -> t x -> State st (Status acc)
 runSteps step acc xs = foldr stepImpl (pure . id) xs (Continue acc)
   where
     stepImpl : x -> (Status acc -> State st (Status acc)) -> Status acc -> State st (Status acc)
