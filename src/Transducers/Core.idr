@@ -65,26 +65,27 @@ makeTransducer :
 makeTransducer initialState stepTf onComplete next =
   MkReducer (initialState, state next) stepImpl completeImpl
   where
-    completeImpl : (s', s) -> acc -> State s (Status acc)
+    completeImpl : (s', s) -> acc -> acc
     completeImpl (s', s) acc =
-      let acc = evalState s (onComplete (runStep next) s' acc)
-      in complete next s acc
+      let acc' = evalState s (onComplete (runStep next) s' acc)
+      in complete next s acc'
+    stepImpl : acc -> a -> State (s', s) (Status acc)
     stepImpl acc x = do
       (s1', s1) <- get
-      let (result, s2) = runState (stepTf (runStep next) (s1', acc) x) s1
+      let (s1New, result) = runState (stepTf (runStep next) (s1', acc) x) s1
       case result of
-        Done (s2', acc) => do
-          put (s2', s2)
-          pure (Done acc)
-        Continue (s2', acc) => do
-          put (s2', s2)
-          pure (Continue acc)
+        Done (s2', acc') => do
+          put (s2', s1New)
+          pure (Done acc')
+        Continue (s2', acc') => do
+          put (s2', s1New)
+          pure (Continue acc')
 
 export
 statefulTransducer : s' -> (Step s acc b -> Step s (s', acc) a) -> Transducer acc s (s', s) a b
 statefulTransducer initState stepTf = makeTransducer initState stepTf onComplete
   where
-    onComplete : Step s (s', acc) a -> s -> acc -> State s (Status acc)
+    onComplete : Step s acc b -> s' -> acc -> State s acc
     onComplete next _ acc = pure acc
 
 export
@@ -97,19 +98,19 @@ withState s = map (\acc => (s, acc))
 --------------------------------------------------------------------------------
 
 export
-runSteps : (Foldable t) => Step st acc x -> acc -> t x -> State st (Status acc)
+runSteps : (Foldable t) => {acc, st, x : Type} -> Step st acc x -> acc -> t x -> State st (Status acc)
 runSteps step acc xs = foldr stepImpl (pure . id) xs (Continue acc)
   where
     stepImpl : x -> (Status acc -> State st (Status acc)) -> Status acc -> State st (Status acc)
-    stepImpl _ nextIteration (Done acc) = pure (Done acc)
-    stepImpl x nextIteration (Continue acc) = step acc x >>= nextIteration
+    stepImpl _ nextIteration (Done acc') = pure (Done acc')
+    stepImpl x nextIteration (Continue acc') = step acc' x >>= nextIteration
 
 export
 reduce : (Foldable t) => Reducer st acc x -> acc -> t x -> acc
 reduce step acc =
   uncurry (complete step)
-    . (\(acc, s) => (s, unStatus acc))
-    . (runState (state step))
+    . (\(s, status) => (s, unStatus status))
+    . runState (state step)
     . runSteps (runStep step) acc
 
 export
