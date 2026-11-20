@@ -17,7 +17,7 @@ implementation Conj (List a) a where
 
 export
 implementation Conj String Char where
-  conj xs x = xs ++ singleton x
+  conj xs x = xs ++ [x]
 
 
 --------------------------------------------------------------------------------
