@@ -2,6 +2,7 @@ module Transducers.Utils
 
 import Transducers.Core
 
+import Data.String
 
 --------------------------------------------------------------------------------
 -- Utils to conjoin elements to a container
@@ -17,7 +18,7 @@ implementation Conj (List a) a where
 
 export
 implementation Conj String Char where
-  conj xs x = xs ++ [x]
+  conj xs x = xs ++ singleton x
 
 
 --------------------------------------------------------------------------------
